@@ -1,3 +1,3 @@
-module topsdk
+module github.com/LGYS07/topsdk
 
-go 1.16
+go 1.24.4
