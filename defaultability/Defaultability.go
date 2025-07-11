@@ -179,26 +179,6 @@ func (ability *Defaultability) AlibabaAlihealthDrugMscGetentinfo(req *request.Al
 }
 
 /*
-企业上传出入库信息
-*/
-func (ability *Defaultability) AlibabaAlihealthDrugMscUploadinoutbill(req *request.AlibabaAlihealthDrugMscUploadinoutbillRequest) (*response.AlibabaAlihealthDrugMscUploadinoutbillResponse, error) {
-	if ability.Client == nil {
-		return nil, errors.New("Defaultability topClient is nil")
-	}
-	var jsonStr, err = ability.Client.Execute("alibaba.alihealth.drug.msc.uploadinoutbill", req.ToMap(), req.ToFileMap())
-	var respStruct = response.AlibabaAlihealthDrugMscUploadinoutbillResponse{}
-	if err != nil {
-		log.Println("alibabaAlihealthDrugMscUploadinoutbill error", err)
-		return &respStruct, err
-	}
-	err = util.HandleJsonResponse(jsonStr, &respStruct)
-	if respStruct.Body == "" || len(respStruct.Body) == 0 {
-		respStruct.Body = jsonStr
-	}
-	return &respStruct, err
-}
-
-/*
 查询往来单位列表
 */
 func (ability *Defaultability) AlibabaAlihealthDrugMscListparts(req *request.AlibabaAlihealthDrugMscListpartsRequest) (*response.AlibabaAlihealthDrugMscListpartsResponse, error) {
@@ -289,6 +269,26 @@ func (ability *Defaultability) AlibabaAlihealthDrugMscGetbyentid(req *request.Al
 	var respStruct = response.AlibabaAlihealthDrugMscGetbyentidResponse{}
 	if err != nil {
 		log.Println("alibabaAlihealthDrugMscGetbyentid error", err)
+		return &respStruct, err
+	}
+	err = util.HandleJsonResponse(jsonStr, &respStruct)
+	if respStruct.Body == "" || len(respStruct.Body) == 0 {
+		respStruct.Body = jsonStr
+	}
+	return &respStruct, err
+}
+
+/*
+企业上传出入库信息
+*/
+func (ability *Defaultability) AlibabaAlihealthDrugMscUploadinoutbill(req *request.AlibabaAlihealthDrugMscUploadinoutbillRequest) (*response.AlibabaAlihealthDrugMscUploadinoutbillResponse, error) {
+	if ability.Client == nil {
+		return nil, errors.New("Defaultability topClient is nil")
+	}
+	var jsonStr, err = ability.Client.Execute("alibaba.alihealth.drug.msc.uploadinoutbill", req.ToMap(), req.ToFileMap())
+	var respStruct = response.AlibabaAlihealthDrugMscUploadinoutbillResponse{}
+	if err != nil {
+		log.Println("alibabaAlihealthDrugMscUploadinoutbill error", err)
 		return &respStruct, err
 	}
 	err = util.HandleJsonResponse(jsonStr, &respStruct)
