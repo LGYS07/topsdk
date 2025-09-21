@@ -567,3 +567,49 @@ func GenerateSHA256FromStream(reader io.Reader) (string, error) {
 func GenerateSHA1FromStream(reader io.Reader) (string, error) {
 	return generateHashFromStream(reader, sha1.New, "SHA1")
 }
+
+// HandleWechatPayCallback 处理微信支付回调的便捷函数
+// 该函数验证回调签名并解析通知内容，返回解密后的业务数据
+func HandleWechatPayCallback(
+    mchConfig *MchConfig,
+    apiv3Key string,
+    headers http.Header,
+    body []byte,
+) (*Notification, map[string]interface{}, error) {
+    // 1. 验证并解析通知
+    notification, err := ParseNotification(
+        mchConfig.WechatPayPublicKeyId(),
+        mchConfig.WechatPayPublicKey(),
+        apiv3Key,
+        &headers,
+        body,
+    )
+    if err != nil {
+        return nil, nil, fmt.Errorf("failed to parse notification: %w", err)
+    }
+
+    // 2. 解析解密后的业务数据
+    var businessData map[string]interface{}
+    if err := json.Unmarshal([]byte(notification.Plaintext), &businessData); err != nil {
+        return notification, nil, fmt.Errorf("failed to unmarshal business data: %w", err)
+    }
+
+    return notification, businessData, nil
+}
+
+// HandleWechatPayCallbackFromRequest 从HTTP请求直接处理微信支付回调
+// 该函数从HTTP请求中提取必要信息并调用HandleWechatPayCallback
+func HandleWechatPayCallbackFromRequest(
+    mchConfig *MchConfig,
+    apiv3Key string,
+    r *http.Request,
+) (*Notification, map[string]interface{}, error) {
+    // 读取请求体
+    bodyBytes, err := io.ReadAll(r.Body)
+    if err != nil {
+        return nil, nil, fmt.Errorf("failed to read request body: %w", err)
+    }
+
+    // 处理回调
+    return HandleWechatPayCallback(mchConfig, apiv3Key, r.Header, bodyBytes)
+}
