@@ -613,3 +613,69 @@ func HandleWechatPayCallbackFromRequest(
     // 处理回调
     return HandleWechatPayCallback(mchConfig, apiv3Key, r.Header, bodyBytes)
 }
+// GenerateMiniProgramPaySign 生成小程序调起支付的签名值
+// 使用字段: appId, timeStamp, nonceStr, package
+// 签名算法: SHA256 with RSA
+func GenerateMiniProgramPaySign(appId, timeStamp, nonceStr, packageStr string, privateKey *rsa.PrivateKey) (string, error) {
+    if privateKey == nil {
+        return "", fmt.Errorf("private key should not be nil")
+    }
+    
+    // 按照字段名的ASCII码从小到大排序（字典序）后，使用URL键值对的格式拼接成字符串
+    // 注意：package参数需要保持原样，不需要转义
+    signStr := fmt.Sprintf("appId=%s&nonceStr=%s&package=%s&timeStamp=%s", 
+        appId, nonceStr, packageStr, timeStamp)
+    
+    // 使用SHA256WithRSA算法生成签名
+    signature, err := SignSHA256WithRSA(signStr, privateKey)
+    if err != nil {
+        return "", fmt.Errorf("generate pay sign failed: %w", err)
+    }
+    
+    return signature, nil
+}
+
+// GenerateMiniProgramPayParams 生成小程序调起支付所需的所有参数
+// 返回包含所有必要参数的结构体，方便前端调用
+func GenerateMiniProgramPayParams(
+    appId string, 
+    prepayId string, 
+    privateKey *rsa.PrivateKey,
+) (*MiniProgramPayParams, error) {
+    // 生成随机字符串
+    nonceStr, err := GenerateNonce()
+    if err != nil {
+        return nil, fmt.Errorf("generate nonce str failed: %w", err)
+    }
+    
+    // 生成时间戳（秒级）
+    timeStamp := strconv.FormatInt(time.Now().Unix(), 10)
+    
+    // 构建package字符串
+    packageStr := "prepay_id=" + prepayId
+    
+    // 生成签名
+    paySign, err := GenerateMiniProgramPaySign(appId, timeStamp, nonceStr, packageStr, privateKey)
+    if err != nil {
+        return nil, fmt.Errorf("generate pay sign failed: %w", err)
+    }
+    
+    return &MiniProgramPayParams{
+        AppId:     appId,
+        TimeStamp: timeStamp,
+        NonceStr:  nonceStr,
+        Package:   packageStr,
+        SignType:  "RSA",
+        PaySign:   paySign,
+    }, nil
+}
+
+// MiniProgramPayParams 小程序调起支付参数
+type MiniProgramPayParams struct {
+    AppId     string `json:"appId"`
+    TimeStamp string `json:"timeStamp"`
+    NonceStr  string `json:"nonceStr"`
+    Package   string `json:"package"`
+    SignType  string `json:"signType"`
+    PaySign   string `json:"paySign"`
+}
